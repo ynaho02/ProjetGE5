@@ -4,6 +4,8 @@
 
 package fr.insa.ynaho01.projetmessagerie;
 
+import fr.insa.ynaho01.projetmessagerie.Utils.Lire;
+
 /**
  *
  * @author marie
@@ -11,6 +13,9 @@ package fr.insa.ynaho01.projetmessagerie;
 public class ProjetMessagerie {
 
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        
+        System.out.println("Entrez qqch");
+        int qqch = Lire.i();
+        System.out.println(qqch);
     }
 }

@@ -8,6 +8,11 @@ package fr.insa.ynaho01.projetmessagerie;
  *
  * @author marie
  */
-public class client {
+
+import java.net.Socket;
+
+public class ClientChat {
+    
+    
     
 }
