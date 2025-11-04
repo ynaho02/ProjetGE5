@@ -73,9 +73,14 @@ public class ServeurChat {
             if (this.NomClient == null || this.NomClient.trim().isEmpty()) {
                     this.NomClient = "Anonyme_" + this.getId();
                 }
-            String Line;
-             while ((Line = entree.readLine()) != null) {
-                    System.out.println("reçu from : " + this.NomClient + " : " + Line + "\n");
+            String message;
+             while ((message = entree.readLine()) != null) {
+                    System.out.println("reçu from : " + this.NomClient + " : " + message + "\n");
+                    
+                    if (message.equals("FIN")) {
+                        break;
+                    }
+                    diffuserMessage(message, this);
                 }
             
         }  catch (IOException ex) {
@@ -84,19 +89,63 @@ public class ServeurChat {
  
     }
     
-   }
+   
     
-    public static void envoyerMessage(String message){
-        
+    public void envoyerMessage(String message){
+        if (sortie != null) {
+                sortie.println(message);
+            }
     }
+    
+    //méthode pour diffuser les messages 
     private static void diffuserMessage(String message, GestionClient emetteur) {
         synchronized(clientsConnectes){
             for (GestionClient client : clientsConnectes){
                 if (client != emetteur){
-                    //client.envoyerMessage(message);
+                    client.envoyerMessage(message);
                 }
             }
         }
+    }
+    
+         public String getNomClient() {
+            return this.NomClient;
+        }
+    }
+    
+    
+    public static void multiClient() {
+        
+         try {
+            Inet4Address host = INetAdressUtil.premiereAdresseNonLoopback();
+            ServerSocket ss = new ServerSocket(PORT, 10, host);
+            System.out.println("=================================");
+            System.out.println("   SERVEUR DE CHAT DÉMARRÉ");
+            System.out.println("=================================");
+            System.out.println("IP   : " + host.getHostAddress());
+            System.out.println("Port : " + PORT);
+            System.out.println("En attente de connexions...\n");
+            
+            while(true){
+                Socket con = ss.accept();
+                GestionClient GC = new GestionClient(con);
+                System.out.println("→ Nouvelle connexion depuis : " + 
+                                con.getInetAddress().getHostAddress());
+                
+                clientsConnectes.add(GC);
+                GC.start();
+            }
+            
+            
+            
+         } catch (IOException ex) {
+            throw new Error(ex);
+        }
+        
+    }
+            
+    public static void main(String[] args) {
+        
     }
     
 }
