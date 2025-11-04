@@ -145,7 +145,7 @@ public class ServeurChat {
     }
             
     public static void main(String[] args) {
-        
+        multiClient();
     }
     
 }
