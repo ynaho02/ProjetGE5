@@ -149,11 +149,11 @@ public class ClientChatGUI extends JFrame {
         SwingUtilities.invokeLater(() -> {
             try {
                 String host = JOptionPane.showInputDialog(
-                        null, "Adresse du serveur :", "localhost");
+                        null, "Adresse du serveur :", "192.168.56.1");
                 if (host == null || host.isBlank()) return;
 
                 String portStr = JOptionPane.showInputDialog(
-                        null, "Port du serveur :", "5001");
+                        null, "Port du serveur :", "5002");
                 if (portStr == null || portStr.isBlank()) return;
                 int port = Integer.parseInt(portStr.trim());
 
