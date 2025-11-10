@@ -63,6 +63,7 @@
             
         </plugins>
     </build>  
+
   <dependencies>
 
         <!-- Vosk pour reconnaissance vocale -->
@@ -87,5 +88,5 @@
         </dependency>
 
     </dependencies>          
-        
+   
 </project>

@@ -91,9 +91,9 @@ public class ServeurChat {
     
    
     
-    public void envoyerMessage(String message){
+    public void envoyerMessage(String nomExpediteur,String message){
         if (sortie != null) {
-                sortie.println(message);
+            sortie.println(nomExpediteur + " a dit : " + message);
             }
     }
     
@@ -102,7 +102,7 @@ public class ServeurChat {
         synchronized(clientsConnectes){
             for (GestionClient client : clientsConnectes){
                 if (client != emetteur){
-                    client.envoyerMessage(message);
+                    client.envoyerMessage(emetteur.getNomClient(), message);
                 }
             }
         }
