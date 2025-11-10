@@ -1,0 +1,103 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package projectmessagerie;
+
+/**
+ *
+ * @author ihssa
+ */
+/**
+ * Client de chat :
+ * - envoie son nom au début
+ * - un thread lit les messages venant du serveur
+ * - le thread principal lit au clavier et envoie au serveur
+ */
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+
+
+
+
+public class ClientChat {
+
+    // Thread qui lit les messages du serveur
+    public static class LectureServeur extends Thread {
+
+        private final Socket soc;
+
+        public LectureServeur(Socket soc) {
+            this.soc = soc;
+        }
+
+        @Override
+        public void run() {
+            try (BufferedReader in = new BufferedReader(
+                    new InputStreamReader(soc.getInputStream(), StandardCharsets.UTF_8))) {
+
+                String line;
+                while ((line = in.readLine()) != null) {
+                    System.out.println(">> " + line);
+                }
+            } catch (IOException ex) {
+                System.out.println("Connexion au serveur terminée : " + ex.getMessage());
+            }
+        }
+    }
+
+    public static void clientChat() {
+        try {
+            String adr = ConsoleFdB.entreeString("adresse serveur : ");
+            int port = ConsoleFdB.entreeInt("port du serveur : ");
+            int forceLocalPort = ConsoleFdB.entreeInt("port local à utiliser (0 pour automatique) : ");
+
+            Socket soc = new Socket(adr, port, null, forceLocalPort);
+            System.out.println("Connecté au serveur :");
+            System.out.println("  Adresse serveur : " + soc.getInetAddress().getHostAddress());
+            System.out.println("  Port serveur    : " + soc.getPort());
+            System.out.println("  Adresse locale  : " + soc.getLocalAddress().getHostAddress());
+            System.out.println("  Port local      : " + soc.getLocalPort());
+
+            String name = ConsoleFdB.entreeString("nom du client : ");
+
+            try (PrintWriter out = new PrintWriter(
+                    new OutputStreamWriter(soc.getOutputStream(), StandardCharsets.UTF_8),
+                    true // auto-flush
+            )) {
+                // envoyer le nom
+                out.println(name);
+
+                // démarrer le thread de lecture
+                LectureServeur ls = new LectureServeur(soc);
+                ls.start();
+
+                System.out.println("Tapez vos messages. Écrivez FIN pour quitter.");
+
+                String mess = "";
+                while (!mess.equalsIgnoreCase("FIN")) {
+                    mess = ConsoleFdB.entreeString("");
+                    out.println(mess);
+                }
+
+            } finally {
+                soc.close();
+            }
+
+        } catch (IOException ex) {
+            throw new Error(ex);
+        }
+    }
+
+    public static void main(String[] args) {
+        clientChat();
+    }
+
+}
+
