@@ -18,7 +18,7 @@ import javax.sound.sampled.*;
 
 public class SpeechToText {
 
-    // ⚠ ADAPTE CE CHEMIN à l'endroit où tu as mis le modèle
+   
     private static final String MODEL_PATH =
             "C:/Users/ihssa/OneDrive/Bureau/ge5/PROJET IA/ProjetGE5/models/vosk-model-small-fr-0.22";
 
