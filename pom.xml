@@ -63,6 +63,29 @@
             
         </plugins>
     </build>  
-            
+  <dependencies>
+
+        <!-- Vosk pour reconnaissance vocale -->
+        <dependency>
+            <groupId>com.alphacephei</groupId>
+            <artifactId>vosk</artifactId>
+            <version>0.3.45</version>
+        </dependency>
+
+        <!-- JNA (lib native utilisée par Vosk) -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.7.0</version>
+        </dependency>
+
+        <!-- JSON (pour parser le résultat de Vosk) -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20211205</version>
+        </dependency>
+
+    </dependencies>          
         
 </project>
