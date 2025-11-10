@@ -153,7 +153,7 @@ public class ClientChatGUI extends JFrame {
                 if (host == null || host.isBlank()) return;
 
                 String portStr = JOptionPane.showInputDialog(
-                        null, "Port du serveur :", "5002");
+                        null, "Port du serveur :", "5001");
                 if (portStr == null || portStr.isBlank()) return;
                 int port = Integer.parseInt(portStr.trim());
 

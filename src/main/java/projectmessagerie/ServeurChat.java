@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.io.FileOutputStream;
 
 
 
@@ -32,12 +33,18 @@ import java.util.List;
  * - tous les messages sont diffusés à tous les autres
  */
 public class ServeurChat {
-
+    
     // liste de tous les clients connectés
     private static final List<GereClient> clients =
             Collections.synchronizedList(new ArrayList<>());
 
-    // méthode de diffusion à tous les clients
+    // 🔹 nouvelle liste : historique de tous les messages
+    private static final List<String> historiqueMessages =
+            Collections.synchronizedList(new ArrayList<>());
+
+    // 🔹 option : nom du fichier de log
+    private static final String LOG_FILE = "chat-log.txt";
+        // méthode de diffusion à tous les clients
     public static void diffuser(String message, GereClient emetteur) {
         System.out.println("[DIFFUSION] " + message);
         synchronized (clients) {
@@ -49,7 +56,22 @@ public class ServeurChat {
             }
         }
     }
+    private static void enregistrerMessage(String messageComplet) {
+    // en mémoire
+    synchronized (historiqueMessages) {
+        historiqueMessages.add(messageComplet);
+    }
 
+    // en fichier (append)
+    try (PrintWriter logOut = new PrintWriter(
+            new OutputStreamWriter(
+                    new java.io.FileOutputStream(LOG_FILE, true), // true = append
+                    StandardCharsets.UTF_8))) {
+        logOut.println(messageComplet);
+    } catch (IOException e) {
+        System.err.println("Erreur lors de l'écriture dans le log : " + e.getMessage());
+    }
+}
     public static class GereClient extends Thread {
 
         private String clientName;
@@ -90,10 +112,14 @@ public class ServeurChat {
                     if (line.equalsIgnoreCase("FIN")) {
                         break;
                     }
-                    //System.out.println("reçu de " + this.clientName + " : " + line);
-                    ServeurChat.diffuser(this.clientName + " : " + line, this);
-                }
+                    String messageComplet = this.clientName + " : " + line;
 
+                    // 🔹 enregistrer dans l'historique (mémoire + fichier)
+                    ServeurChat.enregistrerMessage(messageComplet);
+
+                    // 🔹 diffuser aux autres clients
+                    ServeurChat.diffuser(messageComplet, this);
+                }
             } catch (IOException ex) {
                 System.out.println("Erreur avec le client " + clientName + " : " + ex.getMessage());
             } finally {
@@ -117,12 +143,15 @@ public class ServeurChat {
     public static void multiClient() {
         try {
             Inet4Address host = INetAdresseUtil.premiereAdresseNonLoopback();
-            int port = 5002;
+            int port = 5001;
             ServerSocket ss = new ServerSocket(port, 10, host);
             System.out.println("Serveur de chat en attente :");
             System.out.println("ip   : " + host.getHostAddress());
             System.out.println("port : " + ss.getLocalPort()); // port réel si 0
-
+               
+            java.io.File logFile = new java.io.File(LOG_FILE);
+            System.out.println("Fichier de log : " + logFile.getAbsolutePath());
+        
             while (true) {
                 Socket soc = ss.accept();
                 System.out.println("Connexion acceptée :");
@@ -139,6 +168,11 @@ public class ServeurChat {
             }
         } catch (IOException ex) {
             throw new Error(ex);
+        }
+    }
+    public static List<String> getHistoriqueMessages() {
+        synchronized (historiqueMessages) {
+            return new ArrayList<>(historiqueMessages); // on renvoie une copie
         }
     }
 
