@@ -79,7 +79,7 @@ public class ServeurChat {
                     return;
                 }
 
-                System.out.println("Client connecté : " + this.clientName
+                System.out.println("Client connecte : " + this.clientName
                         + " (" + conn.getInetAddress().getHostAddress() + ":" + conn.getPort() + ")");
 
                 // annoncer l'arrivée
@@ -90,7 +90,7 @@ public class ServeurChat {
                     if (line.equalsIgnoreCase("FIN")) {
                         break;
                     }
-                    System.out.println("reçu de " + this.clientName + " : " + line);
+                    //System.out.println("reçu de " + this.clientName + " : " + line);
                     ServeurChat.diffuser(this.clientName + " : " + line, this);
                 }
 
@@ -109,7 +109,7 @@ public class ServeurChat {
                 if (clientName != null) {
                     ServeurChat.diffuser("[serveur] " + clientName + " a quitté le chat.", this);
                 }
-                System.out.println("Client déconnecté : " + clientName);
+                System.out.println("Client déconnecte : " + clientName);
             }
         }
     }
@@ -117,7 +117,7 @@ public class ServeurChat {
     public static void multiClient() {
         try {
             Inet4Address host = INetAdresseUtil.premiereAdresseNonLoopback();
-            int port = ConsoleFdB.entreeInt("port du serveur (0 pour automatique) : ");
+            int port = 5002;
             ServerSocket ss = new ServerSocket(port, 10, host);
             System.out.println("Serveur de chat en attente :");
             System.out.println("ip   : " + host.getHostAddress());

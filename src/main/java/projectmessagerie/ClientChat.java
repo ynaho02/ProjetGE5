@@ -55,10 +55,10 @@ public class ClientChat {
     public static void clientChat() {
         try {
             String adr = ConsoleFdB.entreeString("adresse serveur : ");
-            int port = ConsoleFdB.entreeInt("port du serveur : ");
-            int forceLocalPort = ConsoleFdB.entreeInt("port local à utiliser (0 pour automatique) : ");
-
-            Socket soc = new Socket(adr, port, null, forceLocalPort);
+            int port = 5002;
+            System.out.println("Connexion au serveur " + adr + " sur le port " + port + " ...");
+            
+            Socket soc = new Socket(adr, port);
             System.out.println("Connecté au serveur :");
             System.out.println("  Adresse serveur : " + soc.getInetAddress().getHostAddress());
             System.out.println("  Port serveur    : " + soc.getPort());
