@@ -4,11 +4,13 @@
  */
 package fr.insa.ynaho01.javaFX;
 
+import fr.insa.ynaho01.projetmessagerie.INetAdressUtil;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.Inet4Address;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
@@ -31,7 +33,8 @@ public class ClientChatInter {
     public boolean connect(String username) {
         try {
             //String adr = ConsoleFdB.entreeString("adresse serveur : ");
-            String adr = "10.172.26.40";
+            Inet4Address host = INetAdressUtil.premiereAdresseNonLoopback();
+            String adr = host.getHostAddress();
             int port = 50001;
             System.out.println("Connexion au serveur " + adr + " sur le port " + port + " ...");
 

@@ -47,7 +47,6 @@ public class VueMessage extends HBox {
 
     private VBox LeftBar;
     private VBox RightPane;
-
     private HBox BottomBar;
     private VBox MessageArea;
     private String username;
@@ -55,14 +54,16 @@ public class VueMessage extends HBox {
 
     public VueMessage(String username) {
 
-        Image fond = getImage("images/background3.jpg");
+        Image fond = getImage("images/new_one.png");
         if (fond != null) {
+
             BackgroundImage bgImage = new BackgroundImage(
                     fond,
-                    BackgroundRepeat.NO_REPEAT,
-                    BackgroundRepeat.NO_REPEAT,
+                    BackgroundRepeat.SPACE,
+                    BackgroundRepeat.SPACE,
                     BackgroundPosition.CENTER,
-                    new BackgroundSize(100, 100, true, true, false, false)
+                    BackgroundSize.DEFAULT
+            //new BackgroundSize(100, 100, true, true, false, false)
             );
             this.setBackground(new Background(bgImage));
         }
@@ -138,12 +139,6 @@ public class VueMessage extends HBox {
 
         Button bRefresh = new Button("Rafraichir");
         styleButton(bRefresh);
-        /*
-        bRefresh.setOnAction((t) -> {
-            String nvmsg = client.recupMessage();
-            messageArea.appendText(nvmsg + "\n");
-        });
-        */
         refreshMessage rm = new refreshMessage(this.client,messageArea, this.nouveaux);
         rm.start();
 

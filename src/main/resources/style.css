@@ -1,0 +1,103 @@
+/* Fond global */
+.root {
+    -fx-background-color: linear-gradient(to bottom, #1e1e2f, #2c2c3c);
+}
+
+/* Titres */
+.label-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: chocolate;
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+.welcome-title {
+    -fx-font-size: 36px;
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-font-weight: bold;
+    -fx-text-fill: linear-gradient(to right, chocolate, #ff6f61);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 6, 0.3, 0, 0);
+
+}
+
+.forgot-link {
+    -fx-text-fill: chocolate;
+    -fx-font-size: 13px;
+    -fx-underline: true;
+    -fx-font-weight: normal;
+}
+
+.forgot-link:hover {
+    -fx-text-fill: #ff6f61;
+}
+
+
+/* Champs de texte */
+.text-field, .password-field {
+    -fx-background-radius: 10;
+    -fx-border-color: #ff6f61;
+    -fx-border-radius: 10;
+    -fx-padding: 8px;
+}
+
+/* Boutons */
+.button {
+    -fx-background-color: chocolate;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 20px;
+    -fx-padding: 8px 16px;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0.3, 0, 0);
+}
+
+.button:pressed {
+    -fx-background-color: #ff6f61; /* orange doux */
+}
+
+
+.button:hover {
+    -fx-background-color: #ffcc70;
+}
+
+/* Style général du logo */
+.logo {
+    -fx-fit-height: 80px;
+    -fx-opacity: 0.85;
+    -fx-smooth: true;
+    -fx-preserve-ratio: true;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 6, 0.3, 0, 0);
+}
+
+/* Effet au survol */
+.logo:hover {
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+/* Variante avec bordure circulaire */
+.logo-border {
+    -fx-border-color: red;
+    -fx-border-width: 3px;
+    -fx-border-radius: 50%; /* arrondi complet */
+}
+
+
+/* Boîtes de login/inscription */
+.vbox-box {
+    -fx-background-color: rgba(255,255,255,0.5);
+    -fx-padding: 25px;
+    -fx-background-radius: 15px;
+    -fx-effect: dropshadow(gaussian, #999999, 10, 0.5, 0, 0);
+}
+
+.glass-box {
+    -fx-background-color: rgba(30, 30, 30, 0.6);
+    -fx-background-radius: 20px;
+    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-border-width: 1px;
+    -fx-border-radius: 20px;
+    -fx-padding: 25px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0.3, 0, 0);
+}
