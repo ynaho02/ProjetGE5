@@ -9,14 +9,33 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class HttpApiLLMBackend {
 
     private final String apiKey;
     private final String apiUrl;
+  
+    
+    public HttpApiLLMBackend() {
+         // 1) Essayer variable d'environnement
+        String key = System.getenv("OPENAI_API_KEY");
 
-    public HttpApiLLMBackend(String apiKey, String apiUrl) {
-        this.apiKey = "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";
+        // 2) Sinon, essayer -DOPENAI_API_KEY=...
+        if (key == null || key.isBlank()) {
+            key = System.getProperty("OPENAI_API_KEY");
+        }
+
+        // 3) Si toujours pas de clé → erreur claire
+        if (key == null || key.isBlank()) {
+            throw new IllegalStateException(
+                "OPENAI_API_KEY absente. " +
+                "Définis-la via variable d'environnement ou VM option -DOPENAI_API_KEY"
+            );
+        }
+        this.apiKey = key;
         this.apiUrl = "https://api.openai.com/v1/responses";
     }
 
@@ -49,55 +68,32 @@ public class HttpApiLLMBackend {
         HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        String json = response.body();
+        String jsonStr = response.body();
 
-        // --- Debug : afficher la réponse brute ---
-        //System.out.println("Réponse OpenAI JSON : " + json);
+        // Parsing JSON propre
+        JsonObject json = JsonParser.parseString(jsonStr).getAsJsonObject();
 
-        // --- 3) Gestion d'une éventuelle erreur API ---
-         if (json.contains("\"error\"")) {
-            return "Erreur LLM (rate limit ou autre).";
+        // Gestion des vraies erreurs
+        if (!json.get("error").isJsonNull()) {
+            return "Erreur LLM : " + json.get("error").toString();
         }
 
-         // 4) On cherche d'abord "type":"output_text"
-        int typeIdx = json.indexOf("\"type\":\"output_text\"");
-        if (typeIdx == -1) {
-            return "Erreur : pas de bloc output_text dans la réponse LLM.";
-        }
+        // Aller chercher le texte dans json.output[0].content[0].text
+        JsonArray output = json.getAsJsonArray("output");
+        JsonObject msg = output.get(0).getAsJsonObject();
 
-        // À partir de là, on cherche "text":
-        int textIdx = json.indexOf("\"text\":", typeIdx);
-        if (textIdx == -1) {
-            return "Erreur : champ \"text\" introuvable après output_text.";
-        }
+        JsonArray contentArr = msg.getAsJsonArray("content");
+        JsonObject contentObj = contentArr.get(0).getAsJsonObject();
 
-        String sub = json.substring(textIdx + "\"text\":".length());
+        String text = contentObj.get("text").getAsString();
 
-        // premier guillemet ouvrant
-        int startQuote = sub.indexOf('"');
-        if (startQuote == -1) {
-            return "Erreur : format texte inattendu.";
-        }
-        sub = sub.substring(startQuote + 1);
+        return text;
 
-        // guillemet fermant
-        int endQuote = sub.indexOf('"');
-        if (endQuote == -1) {
-            return "Erreur : format texte tronqué.";
-        }
-
-        String extracted = sub.substring(0, endQuote);
-
-        // on remet les \n en vrais retours à la ligne
-        extracted = extracted.replace("\\n", "\n");
-
-        return extracted.trim();
-
-    } catch (IOException | InterruptedException e) {
+    } catch (Exception e) {
         e.printStackTrace();
-        return "Erreur résumé (exception) : " + e.getMessage();
+        return "Erreur résumé : " + e.getMessage();
     }
-}
+   }
 
 
 }

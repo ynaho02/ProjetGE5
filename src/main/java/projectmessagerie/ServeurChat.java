@@ -46,28 +46,28 @@ public class ServeurChat {
     Thread t = new Thread(() -> {
 
         HttpApiLLMBackend backend =
-            new HttpApiLLMBackend("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", "https://api.openai.com/v1/responses");
+            new HttpApiLLMBackend();
 
         LLMSummarizer summarizer = new LLMSummarizer(backend);
 
+        int lastSize = 0;
+
         while (true) {
-            try {
-                Thread.sleep(10_000); // 📌 toutes les 10 secondes
-            } catch (InterruptedException e) {
-                return;
-            }
+            try { Thread.sleep(30000); } catch (InterruptedException e) { return; }
 
             List<String> copy;
             synchronized (historiqueMessages) {
                 copy = new ArrayList<>(historiqueMessages);
             }
 
-            if (copy.isEmpty()) continue;
+            // 🔥 SEULEMENT si de nouveaux messages ont été ajoutés
+            if (copy.size() == lastSize) continue;
+
+            lastSize = copy.size();
 
             String resume = summarizer.summarize(copy);
-
             diffuser("[SUMMARY] " + resume, null);
-            System.out.println("[Résumé LLM]:\n" + resume);
+            System.out.println("[Résumé LLM]: " + resume);
         }
     });
 
