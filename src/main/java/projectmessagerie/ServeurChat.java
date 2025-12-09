@@ -41,6 +41,40 @@ public class ServeurChat {
     // 🔹 nouvelle liste : historique de tous les messages
     private static final List<String> historiqueMessages =
             Collections.synchronizedList(new ArrayList<>());
+    public static void lancerThreadResume() {
+
+    Thread t = new Thread(() -> {
+
+        HttpApiLLMBackend backend =
+            new HttpApiLLMBackend("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", "https://api.openai.com/v1/responses");
+
+        LLMSummarizer summarizer = new LLMSummarizer(backend);
+
+        while (true) {
+            try {
+                Thread.sleep(10_000); // 📌 toutes les 10 secondes
+            } catch (InterruptedException e) {
+                return;
+            }
+
+            List<String> copy;
+            synchronized (historiqueMessages) {
+                copy = new ArrayList<>(historiqueMessages);
+            }
+
+            if (copy.isEmpty()) continue;
+
+            String resume = summarizer.summarize(copy);
+
+            diffuser("[SUMMARY] " + resume, null);
+            System.out.println("[Résumé LLM]:\n" + resume);
+        }
+    });
+
+    t.setDaemon(true);
+    t.start();
+}
+
 
     // 🔹 option : nom du fichier de log
     private static final String LOG_FILE = "chat-log.txt";
@@ -143,8 +177,10 @@ public class ServeurChat {
     public static void multiClient() {
         try {
             Inet4Address host = INetAdresseUtil.premiereAdresseNonLoopback();
-            int port = 5001;
+            int port = 5002;
             ServerSocket ss = new ServerSocket(port, 10, host);
+            System.out.println("Serveur prêt");
+            lancerThreadResume();
             System.out.println("Serveur de chat en attente :");
             System.out.println("ip   : " + host.getHostAddress());
             System.out.println("port : " + ss.getLocalPort()); // port réel si 0
@@ -169,6 +205,9 @@ public class ServeurChat {
         } catch (IOException ex) {
             throw new Error(ex);
         }
+        
+
+
     }
     public static List<String> getHistoriqueMessages() {
         synchronized (historiqueMessages) {

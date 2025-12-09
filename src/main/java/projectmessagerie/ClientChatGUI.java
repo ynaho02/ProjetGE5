@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 public class ClientChatGUI extends JFrame {
 
     private JTextArea chatArea;
+    private JTextArea summaryArea;
     private JTextField inputField;
     private JButton sendButton;
     private JButton audioButton;
@@ -52,13 +53,26 @@ public class ClientChatGUI extends JFrame {
         chatArea.setEditable(false);
         chatArea.setLineWrap(true);
         chatArea.setWrapStyleWord(true);
+        
+        summaryArea = new JTextArea();
+        summaryArea.setEditable(false);
+        summaryArea.setLineWrap(true);
+        summaryArea.setWrapStyleWord(true);
+
 
         JScrollPane chatScroll = new JScrollPane(chatArea);
         chatScroll.setBorder(BorderFactory.createTitledBorder("Messages"));
 
+        JScrollPane summaryScroll = new JScrollPane(summaryArea);
+        summaryScroll.setBorder(BorderFactory.createTitledBorder("Résumé"));
+    
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+            chatScroll, summaryScroll);
+        split.setResizeWeight(0.7);
+        
         inputField = new JTextField();
         sendButton = new JButton("Envoyer");
-        audioButton = new JButton("🎙 Parler");
+        audioButton = new JButton(" Parler");
 
         sendButton.addActionListener(e -> sendTextMessage());
         inputField.addActionListener(e -> sendTextMessage());
@@ -74,11 +88,11 @@ public class ClientChatGUI extends JFrame {
         bottomPanel.add(buttonPanel, BorderLayout.EAST);
 
         getContentPane().setLayout(new BorderLayout(5, 5));
-        getContentPane().add(chatScroll, BorderLayout.CENTER);
+        getContentPane().add(split, BorderLayout.CENTER);
         getContentPane().add(bottomPanel, BorderLayout.SOUTH);
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(600, 400);
+        setSize(800, 400);
         setLocationRelativeTo(null);
         setVisible(true);
     }
@@ -130,9 +144,15 @@ public class ClientChatGUI extends JFrame {
             try {
                 String line;
                 while ((line = in.readLine()) != null) {
-                    String msg = line;
-                    SwingUtilities.invokeLater(() ->
-                            chatArea.append(msg + "\n"));
+                     String msg = line;
+                        SwingUtilities.invokeLater(() -> {
+                            if (msg.startsWith("[SUMMARY]")) {
+                                String resume = msg.substring("[SUMMARY]".length()).trim();
+                                summaryArea.setText(resume + "\n"); 
+                            } else {
+                                chatArea.append(msg + "\n");
+                            }
+                        });
                 }
             } catch (IOException e) {
                 SwingUtilities.invokeLater(() ->
