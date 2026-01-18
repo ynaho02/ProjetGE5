@@ -1,2 +1,7 @@
 /target/
 nbactions.xml
+*.jar
+serveur/
+client/
+target/
+dist/
