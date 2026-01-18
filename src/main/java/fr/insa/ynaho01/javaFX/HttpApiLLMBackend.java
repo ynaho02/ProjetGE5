@@ -22,7 +22,9 @@ public class HttpApiLLMBackend {
     
     public HttpApiLLMBackend() {
          // 1) Essayer variable d'environnement
+
         String key = System.getenv("OPENAI_API_KEY");
+
 
 
         // 2) Sinon, essayer -DOPENAI_API_KEY=...
