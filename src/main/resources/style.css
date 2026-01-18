@@ -20,6 +20,36 @@
 
 }
 
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2d3436;
+    -fx-padding: 5px 0 10px 0;
+}
+
+.list-pane {
+    -fx-background-color: rgba(255, 255, 255, 0.95);
+    -fx-background-radius: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 15, 0, 0, 3);
+}
+
+.toggle-menu {
+
+    -fx-background-color: rgba(255, 255, 255, 0.9);
+    -fx-background-radius: 15px;
+    -fx-font-size: 20px;
+    -fx-text-fill: #2d3436;
+    -fx-padding: 10px 15px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);
+
+}
+.user-label {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 4px;
+}
+
 .forgot-link {
     -fx-text-fill: chocolate;
     -fx-font-size: 13px;

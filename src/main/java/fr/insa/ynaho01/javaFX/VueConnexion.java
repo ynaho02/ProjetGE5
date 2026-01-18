@@ -5,9 +5,11 @@
 package fr.insa.ynaho01.javaFX;
 
 import fr.insa.ynaho01.projetmessagerie.UserManager;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import static java.util.Collections.addAll;
+import java.util.LinkedList;
 import javafx.animation.FadeTransition;
 import javafx.animation.Interpolator;
 import javafx.animation.ParallelTransition;
@@ -56,7 +58,7 @@ public class VueConnexion extends StackPane {
     private HBox center;
     private VBox loginBox;
     private VBox registerBox;
-
+    private final LinkedList<String> users = new LinkedList<>();
     private BorderPane main;
 
     public BorderPane createHeader() {
@@ -71,7 +73,6 @@ public class VueConnexion extends StackPane {
         logo.setSmooth(true);
         logo.setOpacity(0.85);
         logo.getStyleClass().addAll("logo");
-
 
         // Définir le chemin
         Path path = new Path();
@@ -143,9 +144,10 @@ public class VueConnexion extends StackPane {
                 boolean ok = um.authenticate(tfLoginUser.getText(), pfLoginPass.getText());
                 if (ok) {
                     System.out.println("Connexion réussie !");
-                    this.main.setCenter(new VueMessage(tfLoginUser.getText()));
+                    this.main.setCenter(new VueMessage(tfLoginUser.getText(), this.main));
                     feedbackLogin.setText("Connexion réussie !");
                     feedbackLogin.setTextFill(Color.GREEN);
+
                 } else {
                     System.out.println("Identifiants incorretcs");
                     feedbackLogin.setText("Identifiants incorrects");
@@ -203,7 +205,7 @@ public class VueConnexion extends StackPane {
 
                     if (ok) {
                         System.out.println("Inscription reussie");
-                        this.main.setCenter(new VueMessage(tfRegisterUser.getText()));
+                        this.main.setCenter(new VueMessage(tfRegisterUser.getText(), this.main));
                     } else {
                         System.out.println("Probleme déjà incrit");
                     }
@@ -285,8 +287,13 @@ public class VueConnexion extends StackPane {
 
     //fonction qui permet de retrouver une image dans le dossier src/main en précisant le reste du chemin
     private Image getImage(String resourcePath) {
-        InputStream input = getClass().getResourceAsStream("/" + resourcePath);
-        //System.out.println("Image trouvée ? " + (input != null));
-        return input != null ? new Image(input, 0, 0, true, true) : null;
+        try {
+            File file = new File("assets/" + resourcePath);
+            return new Image(file.toURI().toString(), 0, 0, true, true);
+        } catch (Exception e) {
+            System.out.println("Image introuvable : " + resourcePath);
+            return null;
+        }
     }
+
 }

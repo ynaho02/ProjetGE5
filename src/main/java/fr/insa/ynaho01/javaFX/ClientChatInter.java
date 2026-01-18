@@ -23,11 +23,17 @@ import projectmessagerie.ConsoleFdB;
 public class ClientChatInter {
 
     private Socket soc;
+    private String resume_global;
     private PrintWriter out;
     private final LinkedList<String> messagesRecus = new LinkedList<>();
-    
-    public LinkedList getMessagesRecus(){
+    private final LinkedList<String> utilisateursConnectes = new LinkedList<>();
+
+    public LinkedList getMessagesRecus() {
         return this.messagesRecus;
+    }
+
+    public LinkedList<String> getUtilisateursConnectes() {
+        return this.utilisateursConnectes;
     }
 
     public boolean connect(String username) {
@@ -44,12 +50,12 @@ public class ClientChatInter {
             System.out.println("  Port serveur    : " + soc.getPort());
             System.out.println("  Adresse locale  : " + soc.getLocalAddress().getHostAddress());
             System.out.println("  Port local      : " + soc.getLocalPort());
-            
+
             this.out = new PrintWriter(
-             new OutputStreamWriter(soc.getOutputStream(), StandardCharsets.UTF_8),
-                true
+                    new OutputStreamWriter(soc.getOutputStream(), StandardCharsets.UTF_8),
+                    true
             );
-            
+
             out.println(username);
 
             LectureServeur ls = new LectureServeur(soc);
@@ -63,9 +69,13 @@ public class ClientChatInter {
 
     }
 
-    public String recupMessage(){
+    public String getResume() {
+        return resume_global;
+    }
+
+    public String recupMessage() {
         synchronized (this.messagesRecus) {
-            while(this.messagesRecus.isEmpty()){
+            while (this.messagesRecus.isEmpty()) {
                 try {
                     this.messagesRecus.wait();
                 } catch (InterruptedException e) {
@@ -73,7 +83,7 @@ public class ClientChatInter {
                 }
             }
             return this.messagesRecus.removeLast();
-            
+
         }
     }
 
@@ -84,14 +94,18 @@ public class ClientChatInter {
     }
 
     public void close() throws IOException {
+        if (out != null) {
+            out.println("FIN"); // signal volontaire
+        }
         if (soc != null) {
-            soc.close();
+            soc.close(); // fermeture du socket
         }
     }
 
     private class LectureServeur extends Thread {
 
         private final Socket soc;
+        private String resume;
 
         public LectureServeur(Socket soc) {
             this.soc = soc;
@@ -104,22 +118,35 @@ public class ClientChatInter {
 
                 String line;
                 while ((line = in.readLine()) != null) {
-                    synchronized (messagesRecus) {
-                        messagesRecus.add(line);
-                        messagesRecus.notify(); // réveille attendreMessage()
+
+                    if (line.startsWith("UTILISATEURS:")) {
+                        String[] noms = line.substring("UTILISATEURS:".length()).split(",");
+                        synchronized (utilisateursConnectes) {
+                            utilisateursConnectes.clear();
+                            for (String nom : noms) {
+                                String trimmed = nom.trim();
+                                if (!trimmed.isEmpty()) {
+                                    utilisateursConnectes.add(trimmed);
+                                }
+                            }
+                        }
+                    } else if (line.contains("[SUMMARY]")) {
+                        int idx = line.indexOf("[SUMMARY]") + "[SUMMARY]".length();
+                        this.resume = line.substring(idx).trim();
+                        resume_global = this.resume;
+                        System.out.println("Résumé reçu : " + resume_global);
+                    } else {
+                        synchronized (messagesRecus) {
+                            messagesRecus.add(line);
+                            messagesRecus.notify(); // réveille attendreMessage()
+                        }
+                        System.out.println(">> " + messagesRecus.getLast());
                     }
-                    System.out.println(">> " + messagesRecus.getLast());
                 }
-                
             } catch (IOException ex) {
                 System.out.println("Erreur lecture serveur: " + ex.getMessage());
             }
         }
     }
-    
-
-
 
 }
-
-

@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import projectmessagerie.LLMSummarizer;
+import static projectmessagerie.ServeurChat.diffuser;
 
 //On veut faire un serveur multi-client capable de publier à tous les clients
 //les msg postés par les autres 
@@ -31,6 +33,12 @@ public class ServeurChatInter {
     public static final int PORT = 50001;
 
     private static List<GestionClient> clientsConnectes
+            = Collections.synchronizedList(new ArrayList<>());
+
+    private static List<String> users
+            = Collections.synchronizedList(new ArrayList<>());
+
+    private static final List<String> historiqueMessages
             = Collections.synchronizedList(new ArrayList<>());
 
     //On crée une liste pour contenir l'ensemble des clients onnectés 
@@ -68,25 +76,56 @@ public class ServeurChatInter {
                 //On écrit le nom en premier et ensuite tant que qqch est écrit, 
                 //on print ce qui a été écrit avec le niom du client
                 this.NomClient = entree.readLine();
+
                 if (this.NomClient == null || this.NomClient.trim().isEmpty()) {
                     this.NomClient = "Anonyme_";
                 }
-                String message;
-                while ((message = entree.readLine()) != null) {
-                    System.out.println("reçu from : " + this.NomClient + " : " + message + "\n");
-                    Timestamp quand = new Timestamp(System.currentTimeMillis());
-                    String heure = "[" + quand.toString().substring(11, 19) + "]";
-
-                    String messageComplet = heure + " " + "message reçu de " + this.NomClient + " : " +  message + "\n";
-                    System.out.println(messageComplet);
-                    if (message.equals("FIN")) {
-                        break;
-                    }
-                    diffuserMessage(message, this);
+                synchronized (users) {
+                    users.add(this.NomClient);
                 }
 
+                envoyerListeUtilisateurs();
+                String message;
+                while ((message = entree.readLine()) != null) {
+                    synchronized (historiqueMessages) {
+                       
+                        System.out.println("reçu from : " + this.NomClient + " : " + message + "\n");
+                        Timestamp quand = new Timestamp(System.currentTimeMillis());
+                        String heure = "[" + quand.toString().substring(11, 19) + "]";
+
+                        String messageComplet = heure + " " + "message reçu de " + this.NomClient + " : " + message + "\n";
+                        System.out.println(messageComplet);
+                        if (message.equals("FIN")) {
+                            break;
+                        }
+                        diffuserMessage(message, this);
+                        historiqueMessages.add(message);
+                    }
+                }
             } catch (IOException ex) {
-                throw new Error(ex);
+                System.out.println("Déconnexion ou erreur I/O pour " + this.NomClient + " : " + ex.getMessage());
+            } finally {
+
+                Timestamp quand = new Timestamp(System.currentTimeMillis());
+                String heure = "[" + quand.toString().substring(11, 19) + "]";
+                String deco = heure + " " + this.NomClient + " " + " s'est déconnecté";
+                synchronized (clientsConnectes) {
+                    clientsConnectes.remove(this);
+                }
+
+                synchronized (users) {
+                    users.remove(this.NomClient);
+                }
+                diffuserSystem(deco, this);
+                envoyerListeUtilisateurs();
+
+                try {
+                    connexion.close();
+                } catch (IOException ex) {
+                    // ignore
+                }
+
+                System.out.println(deco);
             }
 
         }
@@ -97,12 +136,30 @@ public class ServeurChatInter {
             }
         }
 
+        public static void envoyerListeUtilisateurs() {
+            String liste = "UTILISATEURS:" + String.join(",", users);
+            for (GestionClient client : clientsConnectes) {
+                client.envoyerMessage(liste);
+            }
+        }
+
+        private static void diffuserSystem(String message, GestionClient emetteur) {
+            synchronized (clientsConnectes) {
+                for (GestionClient client : clientsConnectes) {
+                    if (client != emetteur) {
+                        client.envoyerMessage(message);
+                    }
+                }
+            }
+        }
+
         //méthode pour diffuser les messages 
         private static void diffuserMessage(String message, GestionClient emetteur) {
             Timestamp quand = new Timestamp(System.currentTimeMillis());
             String heure = "[" + quand.toString().substring(11, 19) + "]";
 
-            String messageComplet = heure + " " + "message reçu de " + emetteur.getNomClient() + " : " +  message;
+            String messageComplet = heure + " " + "message reçu de " + emetteur.getNomClient() + " : " + message;
+
             synchronized (clientsConnectes) {
                 for (GestionClient client : clientsConnectes) {
                     if (client != emetteur) {
@@ -111,10 +168,55 @@ public class ServeurChatInter {
                 }
             }
         }
+        
+        private static void diffuserResume(String resume) { 
+            synchronized (clientsConnectes) { 
+                for (GestionClient client : clientsConnectes) { 
+                    client.envoyerMessage("[SUMMARY] " + resume); 
+                } 
+            } 
+        }
 
+        public static void lancerThreadResume() {
+
+    Thread t = new Thread(() -> {
+
+        projectmessagerie.HttpApiLLMBackend backend =
+            new projectmessagerie.HttpApiLLMBackend();
+
+        LLMSummarizer summarizer = new LLMSummarizer(backend);
+
+        int lastSize = 0;
+
+        while (true) {
+            try { Thread.sleep(50000); } catch (InterruptedException e) { return; }
+
+            List<String> copy;
+            synchronized (historiqueMessages) {
+                copy = new ArrayList<>(historiqueMessages);
+            }
+
+            
+            if (copy.size() == lastSize) continue;
+
+            lastSize = copy.size();
+
+            String resume = summarizer.summarize(copy);
+            diffuserResume(resume);
+            System.out.println("[Résumé LLM]: " + resume);
+        }
+    });
+
+    t.setDaemon(true);
+    t.start();
+}
         public String getNomClient() {
             return this.NomClient;
         }
+    }
+
+    public List<String> getHistorique() {
+        return this.historiqueMessages;
     }
 
     public static void multiClient() {
@@ -128,10 +230,11 @@ public class ServeurChatInter {
             System.out.println("IP   : " + host.getHostAddress());
             System.out.println("Port : " + PORT);
             System.out.println("En attente de connexions...\n");
-
+            
             while (true) {
                 Socket con = ss.accept();
                 GestionClient GC = new GestionClient(con);
+                GestionClient.lancerThreadResume();
                 System.out.println("→ Nouvelle connexion depuis : "
                         + con.getInetAddress().getHostAddress());
 
