@@ -22,11 +22,16 @@ public class HttpApiLLMBackend {
     
     public HttpApiLLMBackend() {
          // 1) Essayer variable d'environnement
+<<<<<<< HEAD
 
         String key = System.getenv("OPENAI_API_KEY");
 
 
 
+=======
+       //rajouter la vraie key en string ici
+       String key = "ddd";
+>>>>>>> 835600c (nine : encore commit)
         // 2) Sinon, essayer -DOPENAI_API_KEY=...
         if (key == null || key.isBlank()) {
             key = System.getProperty("OPENAI_API_KEY");
