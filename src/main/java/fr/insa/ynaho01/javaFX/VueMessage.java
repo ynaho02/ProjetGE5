@@ -49,6 +49,8 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Popup;
+import javafx.stage.Window;
 
 /**
  *
@@ -68,11 +70,17 @@ public class VueMessage extends BorderPane {
 
     private final BorderPane main;
     private String lastResume = "";
-    // Nouveau : Container pour les messages avec bulles
+    // Container pour les messages avec bulles
     private VBox messagesContainer;
     private ScrollPane messagesScrollPane;
 
-    public VueMessage(String username, BorderPane main) {
+    private Popup toastPopup;
+
+    private boolean recording = false;
+    private Label currentToast = null;
+
+    //stack pane pour les popup
+    public VueMessage(String username, BorderPane main, ClientChatInter cci) {
 
         // Gradient rouge-bleu moderne (VOS couleurs)
         Stop[] stops = new Stop[]{
@@ -86,9 +94,9 @@ public class VueMessage extends BorderPane {
         this.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         this.main = main;
         this.username = username;
-        this.client = new ClientChatInter();
+        this.client = cci;
         this.nouveaux = this.client.getMessagesRecus();
-        boolean connected = client.connect(username);
+        //boolean connected = client.connect(username);
 
         this.setPadding(new Insets(20));
         this.LeftPane = createLeftPane();
@@ -100,8 +108,10 @@ public class VueMessage extends BorderPane {
         this.setCenter(this.CenterPane);
         this.setLeft(this.LeftPane);
         this.setTop(this.TopRightPane);
-        
+
+        //on crée un stackpane contenu dans la vue qui reste au centre en permanence
         startResumeWatcher();
+
     }
 
     private void startResumeWatcher() {
@@ -109,6 +119,11 @@ public class VueMessage extends BorderPane {
             while (true) {
                 String r = client.getResume();
                 if (r != null && !r.isEmpty() && !r.equals(lastResume)) {
+
+                    if (recording) {
+                        continue;
+                    }
+
                     lastResume = r;
                     Platform.runLater(() -> {
                         showPopUpClickable("📄 Nouveau résumé disponible — cliquer pour ouvrir", "#7e22ce");
@@ -127,55 +142,28 @@ public class VueMessage extends BorderPane {
 
     public VBox createLeftPane() {
         VBox userListPane = new VBox(10);
-        userListPane.setPadding(new Insets(15));
-        userListPane.setStyle(
-                "-fx-background-color: rgba(44, 44, 60, 0.9);"
-                + "-fx-text-fill: #f1f1f1;"
-                + "-fx-background-radius: 20px;"
-                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 15, 0, 0, 3);"
-        );
-        userListPane.setPrefWidth(220);
-        userListPane.setMaxHeight(500);
+        userListPane.getStyleClass().add("sidebar");
+        userListPane.setPrefWidth(240);
 
-        Label title = new Label("💬 Connectés");
-        title.setStyle(
-                "-fx-font-size: 16px;"
-                + "-fx-font-weight: bold;"
-                + "-fx-text-fill: #2d3436;"
-                + "-fx-padding: 5px 0 10px 0;"
-        );
+        Label title = new Label("👥 Contacts");
+        title.getStyleClass().add("sidebar-title");
 
         VBox userContainer = new VBox(8);
-        userContainer.setPadding(new Insets(10, 0, 0, 0));
 
         ScrollPane userScroll = new ScrollPane(userContainer);
         userScroll.setFitToWidth(true);
-        userScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        userScroll.getStyleClass().add("scroll-pane-transparent");
+        userScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         VBox.setVgrow(userScroll, Priority.ALWAYS);
 
         refreshUser ru = new refreshUser(this.client, userContainer, this.client.getUtilisateursConnectes());
         ru.start();
 
-        Button toggleMenu = new Button("☰");
-        toggleMenu.setStyle(
-                "-fx-background-color: rgba(255, 255, 255, 0.9);"
-                + "-fx-background-radius: 15px;"
-                + "-fx-font-size: 20px;"
-                + "-fx-text-fill: #2d3436;"
-                + "-fx-padding: 10px 15px;"
-                + "-fx-cursor: hand;"
-                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);"
-        );
-        toggleMenu.setOnMouseEntered(e -> toggleMenu.setStyle(
-                toggleMenu.getStyle() + "-fx-background-color: white;"
-        ));
-
-        toggleMenu.setOnAction(e -> userListPane.setVisible(!userListPane.isVisible()));
-
         userListPane.getChildren().addAll(title, userScroll);
 
-        VBox leftWrapper = new VBox(15, toggleMenu, userListPane);
+        VBox leftWrapper = new VBox(12, userListPane);
         leftWrapper.setAlignment(Pos.TOP_LEFT);
+        leftWrapper.setPadding(new Insets(10, 10, 10, 0));
 
         return leftWrapper;
     }
@@ -186,40 +174,23 @@ public class VueMessage extends BorderPane {
         center.setPadding(new Insets(0, 20, 0, 20));
         VBox.setVgrow(center, Priority.ALWAYS);
 
-        // Header avec titre
-        Label title = new Label("Messages");
-        title.setStyle(
-                "-fx-font-size: 28px;"
-                + "-fx-font-weight: bold;"
-                + "-fx-text-fill: white;"
-                + "-fx-padding: 10px 0 20px 0;"
-        );
-
-        // Zone des messages avec bulles - CORRECTION ICI
         messagesContainer = new VBox(15);
-        messagesContainer.setPadding(new Insets(20));
-        messagesContainer.setStyle(
-                "-fx-background-color: rgba(255, 255, 255, 0.98);"
-        );
-        messagesContainer.setMinHeight(400);
+        messagesContainer.setPadding(new Insets(18));
+        messagesContainer.getStyleClass().add("chat-card");
 
         messagesScrollPane = new ScrollPane(messagesContainer);
         messagesScrollPane.setFitToWidth(true);
-        messagesScrollPane.setStyle(
-                "-fx-background: rgba(255, 255, 255, 0.98);"
-                + "-fx-background-color: rgba(255, 255, 255, 0.98);"
-                + "-fx-border-color: transparent;"
-                + "-fx-background-radius: 20px 20px 0 0;"
-        );
+        messagesScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        messagesScrollPane.getStyleClass().add("chat-scroll");
         VBox.setVgrow(messagesScrollPane, Priority.ALWAYS);
 
         refreshMessage rm = new refreshMessage(this.client, messagesContainer, this.nouveaux);
         rm.start();
 
-        // Barre d'envoi modernisée
+        //Barre d'envoie sous forme de Hbox
         HBox sendBar = createSendBar();
-
-        center.getChildren().addAll(title, messagesScrollPane, sendBar);
+        sendBar.getStyleClass().add("sendbar");
+        center.getChildren().addAll(messagesScrollPane, sendBar);
 
         return center;
     }
@@ -260,30 +231,50 @@ public class VueMessage extends BorderPane {
 
         btnMic.setOnAction(e -> {
             try {
+                recording = true;
                 this.sp.startRecording();
+
                 btnMic.setDisable(true);
                 btnStopMic.setVisible(true);
                 showPopUp("🎤 Enregistrement en cours...", "#667eea");
             } catch (Exception ex) {
+                recording = false;
+                btnMic.setDisable(false);
+                btnStopMic.setVisible(false);
                 showPopUp("❌ Erreur micro : " + ex.getMessage(), "#e74c3c");
             }
+
         });
 
         btnStopMic.setOnAction(e -> {
-            String transcription = this.sp.stopRecording();
-            btnMic.setDisable(false);
-            btnStopMic.setVisible(false);
+            try {
+                recording = false;
 
-            if (!transcription.isEmpty()) {
-                this.client.sendMessage(transcription);
-                addMessageToUI(transcription, true);
-                showPopUp("✅ Message vocal envoyé !", "#00b894");
-            } else {
-                showPopUp("⚠️ Aucun texte détecté", "#fdcb6e");
+                String transcription = this.sp.stopRecording();
+
+                btnMic.setDisable(false);
+                btnStopMic.setVisible(false);
+
+                if (!transcription.isEmpty()) {
+                    this.client.sendMessage(transcription);
+                    addMessageToUI(transcription, true);
+                    showPopUp("✅ Message vocal envoyé !", "#00b894");
+                } else {
+                    showPopUp("⚠️ Aucun texte détecté", "#fdcb6e");
+                }
+
+            } catch (Exception ex) {
+                recording = false;
+                btnMic.setDisable(false);
+                btnStopMic.setVisible(false);
+                showPopUp("❌ Erreur stop micro : " + ex.getMessage(), "#e74c3c");
             }
         });
 
         btnSend.setOnAction(e -> {
+            if (recording) {
+                return;
+            }
             String msg = tfMessage.getText();
             if (!msg.isEmpty()) {
                 this.client.sendMessage(msg);
@@ -333,6 +324,25 @@ public class VueMessage extends BorderPane {
 
     private void addMessageToUI(String message, boolean isSent) {
         Platform.runLater(() -> {
+            String senderName = isSent ? "Vous" : "Utilisateur";
+            String body = message;
+            //le booleen isSent permet de décider qui de Vous, ou utilisateur sera utilisé pour le label
+
+            if (!isSent && message.startsWith("[SYSTEM]\n")) {
+                addSystemMessageToUI(message.substring("[SYSTEM]\n".length()));
+                return;
+            }
+
+            if (!isSent) {
+                //donc si isSent est false, ça veut dire que c'est pas l'user connecté qui envoie 
+                int cut = message.indexOf("\n");
+                if (cut >= 0) {
+                    senderName = message.substring(0, cut).trim();
+                    body = message.substring(cut + 1);
+                    //on recupère corps du msg + nom de la personne qui a envoyé
+                }
+            }
+
             HBox messageRow = new HBox(10);
             messageRow.setAlignment(isSent ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
             messageRow.setPadding(new Insets(5, 0, 5, 0));
@@ -340,16 +350,14 @@ public class VueMessage extends BorderPane {
             VBox messageContent = new VBox(5);
             messageContent.setMaxWidth(450);
 
-            // Nom de l'utilisateur
-            Label sender = new Label(isSent ? "Vous" : "Utilisateur");
+            Label sender = new Label(senderName);
             sender.setStyle(
                     "-fx-font-size: 11px;"
                     + "-fx-font-weight: bold;"
                     + "-fx-text-fill: #ff1e56;"
             );
 
-            // Bulle de message
-            Label messageBubble = new Label(message);
+            Label messageBubble = new Label(body);
             messageBubble.setWrapText(true);
             messageBubble.setMaxWidth(400);
             messageBubble.setPadding(new Insets(12, 16, 12, 16));
@@ -370,7 +378,6 @@ public class VueMessage extends BorderPane {
                 );
             }
 
-            // Timestamp
             String time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
             Label timestamp = new Label(time);
             timestamp.setStyle(
@@ -386,39 +393,58 @@ public class VueMessage extends BorderPane {
 
             messageRow.getChildren().add(messageContent);
             messagesContainer.getChildren().add(messageRow);
+            Platform.runLater(() -> messagesScrollPane.setVvalue(1.0));
+        });
+    }
 
-            // Auto-scroll vers le bas
+    private void addSystemMessageToUI(String text) {
+
+        //fonction spéciale pour les messages systemes
+        Platform.runLater(() -> {
+            HBox row = new HBox();
+            row.setAlignment(Pos.CENTER);
+            row.setPadding(new Insets(8, 0, 8, 0));
+
+            Label bubble = new Label(text);
+            bubble.setWrapText(true);
+            bubble.setMaxWidth(520);
+            bubble.setPadding(new Insets(8, 14, 8, 14));
+            bubble.setStyle(
+                    "-fx-background-color: rgba(0,0,0,0.12);"
+                    + "-fx-background-radius: 14px;"
+                    + "-fx-text-fill: #2d3436;"
+                    + "-fx-font-size: 12px;"
+                    + "-fx-font-weight: 700;"
+            );
+
+            row.getChildren().add(bubble);
+            messagesContainer.getChildren().add(row);
             Platform.runLater(() -> messagesScrollPane.setVvalue(1.0));
         });
     }
 
     public HBox createTopRightPane() {
-        
-        
-        ImageView userIcon = new ImageView(getImage("images/user_2.png"));
-        userIcon.setFitWidth(40);
-        userIcon.setFitHeight(40);
 
-        Button btnUser = new Button(this.username + "", userIcon);
+        Label pageTitle = new Label("Messages");
+        pageTitle.getStyleClass().addAll("page-title");
+
+        ImageView userIcon = new ImageView(getImage("images/user_2.png"));
+        userIcon.setFitWidth(34);
+        userIcon.setFitHeight(34);
+
+        Button btnUser = new Button(this.username, userIcon);
         btnUser.setStyle(
-                "-fx-background-color: #778899;"
+                "-fx-background-color: rgba(255,255,255,0.22);"
                 + "-fx-background-radius: 999px;"
                 + "-fx-text-fill: white;"
-                + "-fx-font-weight: bold;"
-                + "-fx-padding: 10px 16px;"
+                + "-fx-font-weight: 800;"
+                + "-fx-padding: 10px 14px;"
                 + "-fx-cursor: hand;"
         );
 
         ContextMenu userMenu = new ContextMenu();
-
-        // VOS icônes personnalisées
-        ImageView logoutIcon = createIcon("images/logout.png");
-        ImageView data = createIcon("images/data.png");
-        ImageView infoIcon = createIcon("images/info.png");
-
-        MenuItem info = new MenuItem("Infos utilisateur", infoIcon);
-        MenuItem deco = new MenuItem("Déconnexion", logoutIcon);
-        MenuItem resume = new MenuItem("Résumé des conversations", data);
+        MenuItem resume = new MenuItem("Résumé des conversations", createIcon("images/data.png"));
+        MenuItem deco = new MenuItem("Déconnexion", createIcon("images/logout.png"));
 
         deco.setOnAction(e -> {
             try {
@@ -429,17 +455,21 @@ public class VueMessage extends BorderPane {
             }
         });
 
-        resume.setOnAction((t) -> {
-            this.main.setCenter(new VueResume(this.main, this.client,this.username,this));
-        });
-        userMenu.getItems().addAll(info, resume, deco);
+        resume.setOnAction(e -> this.main.setCenter(new VueResume(this.main, this.client, this.username, this)));
+
+        userMenu.getItems().addAll(resume, deco);
         btnUser.setOnAction(e -> userMenu.show(btnUser, Side.BOTTOM, 0, 0));
 
-        HBox topRight = new HBox(btnUser);
-        topRight.setAlignment(Pos.TOP_RIGHT);
-        topRight.setPadding(new Insets(10));
+        Region spacerL = new Region();
+        Region spacerR = new Region();
+        HBox.setHgrow(spacerL, Priority.ALWAYS);
+        HBox.setHgrow(spacerR, Priority.ALWAYS);
 
-        return topRight;
+        HBox top = new HBox(12, spacerL, pageTitle, spacerR, btnUser);
+        top.setAlignment(Pos.CENTER);
+        top.setPadding(new Insets(10, 10, 10, 10));
+
+        return top;
     }
 
     public class refreshUser extends Thread {
@@ -461,30 +491,16 @@ public class VueMessage extends BorderPane {
                     Platform.runLater(() -> {
                         this.VB.getChildren().clear();
                         for (String nom : this.cci.getUtilisateursConnectes()) {
+
                             HBox userRow = new HBox(12);
                             userRow.setAlignment(Pos.CENTER_LEFT);
-                            userRow.setPadding(new Insets(10));
-                            userRow.setStyle(
-                                    "-fx-background-color: white;"
-                                    + "-fx-background-radius: 12px;"
-                                    + "-fx-cursor: hand;"
-                                    + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 1);"
-                            );
+                            userRow.getStyleClass().add("user-row");
 
-                            userRow.setOnMouseEntered(e -> userRow.setStyle(
-                                    userRow.getStyle() + "-fx-background-color: #f8f9fa;"
-                            ));
-
-                            // Avatar coloré
-                            Circle avatar = new Circle(18);
+                            Circle avatar = new Circle(16);
                             avatar.setFill(Color.web("#667eea"));
 
                             Label userName = new Label(nom);
-                            userName.setStyle(
-                                    "-fx-font-size: 13px;"
-                                    + "-fx-font-weight: 500;"
-                                    + "-fx-text-fill: #2d3436;"
-                            );
+                            userName.getStyleClass().add("user-name");
 
                             userRow.getChildren().addAll(avatar, userName);
                             this.VB.getChildren().add(userRow);
@@ -521,66 +537,98 @@ public class VueMessage extends BorderPane {
     }
 
     public void showPopUp(String message, String color) {
-        Stage popup = new Stage();
-        popup.initStyle(StageStyle.UNDECORATED);
+
+        if (toastPopup != null && toastPopup.isShowing()) {
+            toastPopup.hide();
+        }
+        if (this.getScene() == null) {
+            return;
+        }
 
         Label msg = new Label(message);
         msg.setStyle(
                 "-fx-background-color: " + color + ";"
                 + "-fx-text-fill: white;"
-                + "-fx-padding: 15px 25px;"
-                + "-fx-font-weight: bold;"
-                + "-fx-font-size: 14px;"
-                + "-fx-background-radius: 10px;"
-                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 3);"
+                + "-fx-padding: 12px 18px;"
+                + "-fx-font-weight: 800;"
+                + "-fx-font-size: 13px;"
+                + "-fx-background-radius: 12px;"
+                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 14, 0.25, 0, 6);"
         );
+        msg.setWrapText(true);
+        msg.setMaxWidth(520);
 
-        StackPane pane = new StackPane(msg);
-        pane.setPadding(new Insets(10));
+        toastPopup = new Popup();
+        toastPopup.setAutoFix(true);
+        toastPopup.setAutoHide(true);
+        toastPopup.getContent().add(msg);
 
-        Scene scene = new Scene(pane);
-        scene.setFill(Color.TRANSPARENT);
-        popup.setScene(scene);
-        popup.setAlwaysOnTop(true);
-        popup.show();
+        Window w = this.getScene().getWindow();
+
+        // On affiche d'abord pour avoir les dimensions réelles du label
+        toastPopup.show(w);
+
+        // Position TOP-CENTER
+        double x = w.getX() + (w.getWidth() - msg.getWidth()) / 2.0;
+        double y = w.getY() + 18;
+
+        toastPopup.setX(x);
+        toastPopup.setY(y);
 
         PauseTransition delay = new PauseTransition(Duration.seconds(2.5));
-        delay.setOnFinished(e -> popup.close());
+        delay.setOnFinished(e -> toastPopup.hide());
         delay.play();
     }
 
     private void showPopUpClickable(String message, String color) {
-        Stage popup = new Stage();
-        popup.initStyle(StageStyle.UNDECORATED);
+
+        if (toastPopup != null && toastPopup.isShowing()) {
+            toastPopup.hide();
+        }
+        if (this.getScene() == null) {
+            return;
+        }
+        if (recording) {
+            return;
+        }
+//on affiche pas de poppup de résumé si on fait un enregistrement
 
         Label msg = new Label(message);
         msg.setStyle(
                 "-fx-background-color: " + color + ";"
                 + "-fx-text-fill: white;"
-                + "-fx-padding: 15px 25px;"
-                + "-fx-font-weight: bold;"
-                + "-fx-font-size: 14px;"
-                + "-fx-background-radius: 10px;"
+                + "-fx-padding: 12px 18px;"
+                + "-fx-font-weight: 800;"
+                + "-fx-font-size: 13px;"
+                + "-fx-background-radius: 12px;"
                 + "-fx-cursor: hand;"
-                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 3);"
+                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 14, 0.25, 0, 6);"
         );
+        msg.setWrapText(true);
+        msg.setMaxWidth(520);
 
         msg.setOnMouseClicked(e -> {
-            popup.close();
-            this.main.setCenter(new VueResume(this.main, this.client, this.username,this));
+            toastPopup.hide();
+            this.main.setCenter(new VueResume(this.main, this.client, this.username, this));
         });
 
-        StackPane pane = new StackPane(msg);
-        pane.setPadding(new Insets(10));
+        toastPopup = new Popup();
+        toastPopup.setAutoFix(true);
+        toastPopup.setAutoHide(true);
+        toastPopup.getContent().add(msg);
 
-        Scene scene = new Scene(pane);
-        scene.setFill(Color.TRANSPARENT);
-        popup.setScene(scene);
-        popup.setAlwaysOnTop(true);
-        popup.show();
+        Window w = this.getScene().getWindow();
+
+        toastPopup.show(w);
+
+        double x = w.getX() + (w.getWidth() - msg.getWidth()) / 2.0;
+        double y = w.getY() + 18;
+
+        toastPopup.setX(x);
+        toastPopup.setY(y);
 
         PauseTransition delay = new PauseTransition(Duration.seconds(4));
-        delay.setOnFinished(e -> popup.close());
+        delay.setOnFinished(e -> toastPopup.hide());
         delay.play();
     }
 

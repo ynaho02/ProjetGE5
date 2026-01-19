@@ -14,6 +14,7 @@ import java.net.Inet4Address;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
+import org.json.JSONObject;
 import projectmessagerie.ConsoleFdB;
 
 /**
@@ -130,17 +131,29 @@ public class ClientChatInter {
                                 }
                             }
                         }
-                    } else if (line.contains("[SUMMARY]")) {
-                        int idx = line.indexOf("[SUMMARY]") + "[SUMMARY]".length();
-                        this.resume = line.substring(idx).trim();
-                        resume_global = this.resume;
+                    } else if (line.startsWith("[SUMMARY]")) {
+                        String payload = line.substring("[SUMMARY]".length()).trim();
+                        //decodage du résumé en remettant en place les retour chariot
+                        payload = payload.replace("\\n", "\n").replace("\\\\", "\\");
+                        resume_global = payload;
                         System.out.println("Résumé reçu : " + resume_global);
+
+                    } else if (line.startsWith("{\"type\":\"MSG\"")) {
+                        JSONObject obj = new org.json.JSONObject(line);
+                        String from = obj.optString("from", "Utilisateur");
+                        String text = obj.optString("text", "");
+                        text = text.replace("\\n", "\n").replace("\\\\", "\\");
+                        synchronized (messagesRecus) {
+                            messagesRecus.add(from + "\n" + text);
+                            messagesRecus.notify(); //réveiller le thread
+                        }
+
+                        System.out.println(">> " + messagesRecus.getLast());
                     } else {
                         synchronized (messagesRecus) {
-                            messagesRecus.add(line);
-                            messagesRecus.notify(); // réveille attendreMessage()
+                            messagesRecus.add("[SYSTEM]\n" + line);
+                            messagesRecus.notify();
                         }
-                        System.out.println(">> " + messagesRecus.getLast());
                     }
                 }
             } catch (IOException ex) {

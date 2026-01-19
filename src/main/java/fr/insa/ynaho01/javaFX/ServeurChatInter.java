@@ -88,7 +88,7 @@ public class ServeurChatInter {
                 String message;
                 while ((message = entree.readLine()) != null) {
                     synchronized (historiqueMessages) {
-                       
+
                         System.out.println("reçu from : " + this.NomClient + " : " + message + "\n");
                         Timestamp quand = new Timestamp(System.currentTimeMillis());
                         String heure = "[" + quand.toString().substring(11, 19) + "]";
@@ -99,16 +99,17 @@ public class ServeurChatInter {
                             break;
                         }
                         diffuserMessage(message, this);
-                        historiqueMessages.add(message);
+                        //historiqueMessages.add(message);
+                        historiqueMessages.add(this.NomClient + " : " + message);
+
                     }
                 }
             } catch (IOException ex) {
                 System.out.println("Déconnexion ou erreur I/O pour " + this.NomClient + " : " + ex.getMessage());
             } finally {
 
-                Timestamp quand = new Timestamp(System.currentTimeMillis());
-                String heure = "[" + quand.toString().substring(11, 19) + "]";
-                String deco = heure + " " + this.NomClient + " " + " s'est déconnecté";
+                
+                String deco = this.NomClient + " s'est déconnecté";
                 synchronized (clientsConnectes) {
                     clientsConnectes.remove(this);
                 }
@@ -155,61 +156,82 @@ public class ServeurChatInter {
 
         //méthode pour diffuser les messages 
         private static void diffuserMessage(String message, GestionClient emetteur) {
-            Timestamp quand = new Timestamp(System.currentTimeMillis());
-            String heure = "[" + quand.toString().substring(11, 19) + "]";
-
-            String messageComplet = heure + " " + "message reçu de " + emetteur.getNomClient() + " : " + message;
+            String payload = "{\"type\":\"MSG\",\"from\":\"" + emetteur.getNomClient().replace("\\", "\\\\").replace("\"", "\\\"")
+                    + "\",\"text\":\"" + message.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
+                    + "\"}";
+            //les msg sont envoyés sous le format type\msg\from comme un json
+            //on recupère le nom de la personne qui l'a envoyé pour le traiter dans la vueMessage
 
             synchronized (clientsConnectes) {
                 for (GestionClient client : clientsConnectes) {
                     if (client != emetteur) {
-                        client.envoyerMessage(messageComplet);
+                        client.envoyerMessage(payload);
                     }
                 }
             }
         }
-        
-        private static void diffuserResume(String resume) { 
+
+        private static void diffuserResume(String resume) {
+            //Faire tenir le résumé sur une seule ligne pour que ce soit plus facile de recevoir
+            String oneLine = resume
+                    .replace("\\", "\\\\")
+                    .replace("\r", "")
+                    .replace("\n", "\\n");
+
+            synchronized (clientsConnectes) {
+                for (GestionClient client : clientsConnectes) {
+                    client.envoyerMessage("[SUMMARY] " + oneLine);
+                }
+            }
+        }
+
+        /*   private static void diffuserResume(String resume) { 
             synchronized (clientsConnectes) { 
                 for (GestionClient client : clientsConnectes) { 
                     client.envoyerMessage("[SUMMARY] " + resume); 
                 } 
             } 
         }
-
+         */
         public static void lancerThreadResume() {
 
-    Thread t = new Thread(() -> {
+            Thread t = new Thread(() -> {
 
-        projectmessagerie.HttpApiLLMBackend backend =
-            new projectmessagerie.HttpApiLLMBackend();
+                projectmessagerie.HttpApiLLMBackend backend
+                        = new projectmessagerie.HttpApiLLMBackend();
 
-        LLMSummarizer summarizer = new LLMSummarizer(backend);
+                LLMSummarizer summarizer = new LLMSummarizer(backend);
 
-        int lastSize = 0;
+                int lastSize = 0;
 
-        while (true) {
-            try { Thread.sleep(50000); } catch (InterruptedException e) { return; }
+                while (true) {
+                    try {
+                        Thread.sleep(50000);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
 
-            List<String> copy;
-            synchronized (historiqueMessages) {
-                copy = new ArrayList<>(historiqueMessages);
-            }
+                    List<String> copy;
+                    synchronized (historiqueMessages) {
+                        copy = new ArrayList<>(historiqueMessages);
+                    }
 
-            
-            if (copy.size() == lastSize) continue;
+                    if (copy.size() == lastSize) {
+                        continue;
+                    }
 
-            lastSize = copy.size();
+                    lastSize = copy.size();
 
-            String resume = summarizer.summarize(copy);
-            diffuserResume(resume);
-            System.out.println("[Résumé LLM]: " + resume);
+                    String resume = summarizer.summarize(copy);
+                    diffuserResume(resume);
+                    System.out.println("[Résumé LLM]: " + resume);
+                }
+            });
+
+            t.setDaemon(true);
+            t.start();
         }
-    });
 
-    t.setDaemon(true);
-    t.start();
-}
         public String getNomClient() {
             return this.NomClient;
         }
@@ -230,11 +252,12 @@ public class ServeurChatInter {
             System.out.println("IP   : " + host.getHostAddress());
             System.out.println("Port : " + PORT);
             System.out.println("En attente de connexions...\n");
-            
+
+            GestionClient.lancerThreadResume();
             while (true) {
                 Socket con = ss.accept();
                 GestionClient GC = new GestionClient(con);
-                GestionClient.lancerThreadResume();
+
                 System.out.println("→ Nouvelle connexion depuis : "
                         + con.getInetAddress().getHostAddress());
 

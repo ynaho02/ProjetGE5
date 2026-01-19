@@ -38,7 +38,9 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Hyperlink;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Ellipse;
@@ -60,18 +62,19 @@ public class VueConnexion extends StackPane {
     private VBox registerBox;
     private final LinkedList<String> users = new LinkedList<>();
     private BorderPane main;
+    private ClientChatInter cci;
 
     public BorderPane createHeader() {
 
         BorderPane h = new BorderPane();
         h.setPadding(new Insets(10, 20, 10, 20));
 
-        ImageView logo = new ImageView(getImage("images/reddot.png"));
-        logo.setFitHeight(80);
-        logo.setFitWidth(80);   // 
+        ImageView logo = new ImageView(getImage("images/reddot_3.png"));
+        logo.setFitHeight(100);
+        logo.setFitWidth(100);   // 
         logo.setPreserveRatio(true);
         logo.setSmooth(true);
-        logo.setOpacity(0.85);
+        logo.setOpacity(0.65);
         logo.getStyleClass().addAll("logo");
 
         // Définir le chemin
@@ -82,17 +85,15 @@ public class VueConnexion extends StackPane {
         PathTransition move = new PathTransition(Duration.seconds(2), path, logo);
         move.setInterpolator(Interpolator.EASE_BOTH);
 
-// Rotation
-        RotateTransition rotate = new RotateTransition(Duration.seconds(2), logo);
-        rotate.setByAngle(720); // deux tours complets
-
-// Jouer en parallèle
-        ParallelTransition animation = new ParallelTransition(move, rotate);
-        animation.play();
-
         //Message de bienvenue sur le site reddot
         Label titre = new Label("Bienvenue sur reddot !");
         titre.getStyleClass().add("welcome-title");
+
+        Label subtitle = new Label("Discutez en temps réel • Résumés IA • Messages vocaux");
+        subtitle.getStyleClass().add("label-subtitle");
+
+        VBox titleBox = new VBox(4, titre, subtitle);
+        titleBox.setAlignment(Pos.CENTER_LEFT);
 
         Button btnNouvelleFenetre = new Button("Ouvrir une autre session");
         btnNouvelleFenetre.getStyleClass().add("button");
@@ -100,7 +101,7 @@ public class VueConnexion extends StackPane {
 
         HBox leftHeader = new HBox(30); // espace entre logo et titre
         leftHeader.setAlignment(Pos.CENTER_LEFT);
-        leftHeader.getChildren().addAll(logo, titre);
+        leftHeader.getChildren().addAll(logo, titleBox);
 
         h.setLeft(leftHeader);
         h.setRight(btnNouvelleFenetre);
@@ -115,6 +116,8 @@ public class VueConnexion extends StackPane {
     public VBox createLoginBox() {
 
         VBox lB = new VBox(15);
+        lB.setPrefWidth(420);
+        lB.setMaxWidth(420);
 
         lB.setAlignment(Pos.CENTER_LEFT);
         lB.getStyleClass().add("glass-box");
@@ -131,10 +134,14 @@ public class VueConnexion extends StackPane {
 
         Label feedbackLogin = new Label();
         feedbackLogin.setTextFill(Color.RED);
-        feedbackLogin.setStyle("-fx-font-size: 12px;");
+        feedbackLogin.setVisible(false);
+        feedbackLogin.getStyleClass().add("feedback");
 
         Button btnLogin = new Button("Connexion");
         btnLogin.getStyleClass().add("button");
+
+        CheckBox remember = new CheckBox("Se souvenir de moi");
+        remember.getStyleClass().add("remember-check");
 
         //Gestion du bouton login
         btnLogin.setOnAction((t) -> {
@@ -144,14 +151,32 @@ public class VueConnexion extends StackPane {
                 boolean ok = um.authenticate(tfLoginUser.getText(), pfLoginPass.getText());
                 if (ok) {
                     System.out.println("Connexion réussie !");
-                    this.main.setCenter(new VueMessage(tfLoginUser.getText(), this.main));
-                    feedbackLogin.setText("Connexion réussie !");
-                    feedbackLogin.setTextFill(Color.GREEN);
+                    boolean connected_ok = this.cci.connect(tfLoginUser.getText());
+                    if (connected_ok) {
+                        this.main.setCenter(new VueMessage(tfLoginUser.getText(), this.main, this.cci));
+
+                        feedbackLogin.getStyleClass().removeAll("feedback-error", "feedback-success");
+                        feedbackLogin.getStyleClass().add("feedback-success");
+                        feedbackLogin.setText("✅ Connexion réussie !");
+                        feedbackLogin.setVisible(true);
+
+                    } else {
+                        System.out.println("Serveur non disponible");
+
+                        feedbackLogin.getStyleClass().removeAll("feedback-error", "feedback-success");
+                        feedbackLogin.getStyleClass().add("feedback-error");
+                        feedbackLogin.setText("❌ Serveur non disponible, réessayez plus tard");
+                        feedbackLogin.setVisible(true);
+
+                    }
 
                 } else {
                     System.out.println("Identifiants incorretcs");
-                    feedbackLogin.setText("Identifiants incorrects");
-                    feedbackLogin.setTextFill(Color.RED);
+                    feedbackLogin.getStyleClass().removeAll("feedback-error", "feedback-success");
+                    feedbackLogin.getStyleClass().add("feedback-error");
+                    feedbackLogin.setText("❌ Identifiants incorrects");
+                    feedbackLogin.setVisible(true);
+
                 }
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -166,7 +191,7 @@ public class VueConnexion extends StackPane {
         });
         forgotLink.getStyleClass().add("forgot-link");
 
-        lB.getChildren().addAll(loginTitle, tfLoginUser, pfLoginPass, btnLogin, feedbackLogin, forgotLink);
+        lB.getChildren().addAll(loginTitle, tfLoginUser, pfLoginPass, remember, btnLogin, feedbackLogin, forgotLink);
 
         return lB;
 
@@ -177,9 +202,13 @@ public class VueConnexion extends StackPane {
         VBox rB = new VBox(15);
         rB.getStyleClass().add("glass-box");
         rB.setAlignment(Pos.CENTER_LEFT);
+        rB.setPrefWidth(520);
+        rB.setMaxWidth(520);
 
         Label registerTitle = new Label("📝 Nouveau sur reddot ? Inscrivez-vous !");
         registerTitle.getStyleClass().add("label-title");
+        registerTitle.setWrapText(true);
+        //registerTitle.setMaxWidth(380);
 
         TextField tfRegisterUser = new TextField();
         tfRegisterUser.setPromptText("Nom d'utilisateur");
@@ -196,6 +225,10 @@ public class VueConnexion extends StackPane {
         Button btnRegister = new Button("Inscription");
         btnRegister.getStyleClass().add("button");
 
+        Label feedbackRegister = new Label();
+        feedbackRegister.setVisible(false);
+        feedbackRegister.getStyleClass().add("feedback");
+
         //Gestion du bouton inscription
         btnRegister.setOnAction((t) -> {
             if (pfRegisterPass.getText().equals(pfConfirmPass.getText())) {
@@ -205,9 +238,20 @@ public class VueConnexion extends StackPane {
 
                     if (ok) {
                         System.out.println("Inscription reussie");
-                        this.main.setCenter(new VueMessage(tfRegisterUser.getText(), this.main));
+                        boolean connect_ok = this.cci.connect(tfRegisterUser.getText());
+                        if (connect_ok) {
+                            this.main.setCenter(new VueMessage(tfRegisterUser.getText(), this.main, this.cci));
+                        } else {
+                            System.out.println("Serveur non disponible");
+                            feedbackRegister.getStyleClass().removeAll("feedback-error", "feedback-success");
+                            feedbackRegister.getStyleClass().add("feedback-error");
+                            feedbackRegister.setText("❌ Serveur non disponible, réessayez plus tard");
+                            feedbackRegister.setVisible(true);
+                        }
                     } else {
                         System.out.println("Probleme déjà incrit");
+                        feedbackRegister.setText("Vous êtes déjà inscrit, connectez vous");
+                        feedbackRegister.setTextFill(Color.RED);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -215,19 +259,27 @@ public class VueConnexion extends StackPane {
 
             } else {
                 System.out.println("Mdp pas concordants");
+                feedbackRegister.setText("Mots de passe non concordants");
+                feedbackRegister.setTextFill(Color.RED);
             }
         });
 
-        rB.getChildren().addAll(registerTitle, tfRegisterUser, pfRegisterPass, pfConfirmPass, btnRegister);
+        rB.getChildren().addAll(registerTitle, tfRegisterUser, pfRegisterPass, pfConfirmPass, btnRegister, feedbackRegister);
 
         return rB;
     }
 
     public HBox createCenter(VBox lB, VBox rB) {
         HBox centre = new HBox(80);
-        centre.setAlignment(Pos.CENTER);
-        centre.getChildren().addAll(lB, rB);
 
+        Region separator = new Region();
+        separator.setPrefWidth(2);
+        separator.setMinWidth(2);
+        separator.setPrefHeight(320);
+        separator.getStyleClass().add("vertical-separator");
+
+        centre.setAlignment(Pos.CENTER);
+        centre.getChildren().addAll(lB, separator, rB);
         return centre;
     }
 
@@ -250,7 +302,7 @@ public class VueConnexion extends StackPane {
         }
         //----------------------------------------------
         //Mise en place du reste de l'écran
-
+        this.cci = new ClientChatInter();
         this.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         this.root = new VBox(40);
         this.root.setAlignment(Pos.TOP_CENTER);
@@ -285,7 +337,7 @@ public class VueConnexion extends StackPane {
         this.getChildren().add(this.root);
     }
 
-    //fonction qui permet de retrouver une image dans le dossier src/main en précisant le reste du chemin
+    //fonction qui permet de retrouver une image dans le dossier assets/ en précisant le reste du chemin
     private Image getImage(String resourcePath) {
         try {
             File file = new File("assets/" + resourcePath);

@@ -10,7 +10,16 @@
     -fx-text-fill: chocolate;
     -fx-font-family: "Segoe UI", sans-serif;
 }
-
+.label-subtitle {
+    -fx-text-fill: rgba(210, 105, 30, 0.75);
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+.page-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: 900;
+    -fx-text-fill: rgba(255,255,255,0.92);
+}
 .welcome-title {
     -fx-font-size: 36px;
     -fx-font-family: "Segoe UI", sans-serif;
@@ -89,7 +98,11 @@
 
 .button:hover {
     -fx-background-color: #ffcc70;
+    -fx-scale-x: 1.03;
+    -fx-scale-y: 1.03;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 18, 0.3, 0, 4);
 }
+
 
 /* Style général du logo */
 .logo {
@@ -97,8 +110,9 @@
     -fx-opacity: 0.85;
     -fx-smooth: true;
     -fx-preserve-ratio: true;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 6, 0.3, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.25), 14, 0.3, 0, 0);
 }
+
 
 /* Effet au survol */
 .logo:hover {
@@ -130,4 +144,184 @@
     -fx-border-radius: 20px;
     -fx-padding: 25px;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0.3, 0, 0);
+}
+
+.feedback {
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 10px;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.feedback-success {
+    -fx-background-color: rgba(46, 204, 113, 0.18);
+    -fx-text-fill: #2ecc71;
+}
+
+.feedback-error {
+    -fx-background-color: rgba(231, 76, 60, 0.18);
+    -fx-text-fill: #e74c3c;
+}
+.vertical-separator {
+    -fx-background-color: rgba(255,255,255,0.15);
+    -fx-background-radius: 10px;
+}
+
+.remember-check {
+    -fx-text-fill: rgba(255,255,255,0.8);
+    -fx-font-weight: 600;
+}
+.sidebar {
+    -fx-background-color: rgba(30, 30, 45, 0.55);
+    -fx-background-radius: 18px;
+    -fx-border-color: rgba(255,255,255,0.18);
+    -fx-border-radius: 18px;
+    -fx-padding: 14px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 16, 0.25, 0, 6);
+}
+
+.sidebar-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+    -fx-text-fill: rgba(255,255,255,0.85);
+}
+
+.user-row {
+    -fx-background-color: rgba(255,255,255,0.10);
+    -fx-background-radius: 14px;
+    -fx-padding: 10px 12px;
+    -fx-cursor: hand;
+}
+
+.user-row:hover {
+    -fx-background-color: rgba(255,255,255,0.16);
+}
+
+.user-name {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: rgba(255,255,255,0.88);
+}
+
+.scroll-pane-transparent {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane-transparent .viewport {
+    -fx-background-color: transparent;
+}
+.chat-card {
+    -fx-background-color: rgba(255,255,255,0.92);
+    -fx-background-radius: 18px;
+    -fx-border-color: rgba(0,0,0,0.06);
+    -fx-border-radius: 18px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 18, 0.25, 0, 6);
+}
+
+.chat-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.chat-scroll .viewport {
+    -fx-background-color: transparent;
+}
+.sendbar {
+    -fx-background-color: rgba(255,255,255,0.92);
+    -fx-background-radius: 18px;
+    -fx-border-color: rgba(0,0,0,0.06);
+    -fx-border-radius: 18px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 14, 0.22, 0, 5);
+    -fx-padding: 14px;
+}
+/* ===== VueResume ===== */
+
+.resume-root {
+    -fx-background-color: linear-gradient(to bottom right, #1e3c72, #2a5298, #7e22ce);
+}
+
+/* Header */
+.resume-header {
+    -fx-padding: 6px 6px 0 6px;
+}
+
+.resume-title {
+    -fx-text-fill: white;
+    -fx-font-size: 26px;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+.resume-subtitle {
+    -fx-text-fill: rgba(255,255,255,0.92);
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 6, 0.2, 0, 1);
+}
+
+
+/* Card container */
+.resume-card {
+    -fx-background-color: rgba(255,255,255,0.12);
+    -fx-background-radius: 18px;
+    -fx-border-color: rgba(255,255,255,0.18);
+    -fx-border-radius: 18px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0.25, 0, 8);
+}
+
+
+.resume-textarea {
+    -fx-background-color: transparent;
+    -fx-control-inner-background: rgba(255,255,255,0.92);
+    -fx-background-insets: 0;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+    -fx-border-color: transparent;
+}
+
+
+.resume-textarea .content {
+
+    -fx-background-color: rgba(255,255,255,0.92);
+    -fx-background-radius: 14px;
+    -fx-background-insets: 0;
+}
+
+
+.resume-textarea .viewport {
+    -fx-background-color: transparent;
+}
+
+
+/* Placeholder (promptText) */
+.resume-textarea .text {
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+/* Boutons */
+.btn-ghost {
+    -fx-background-color: rgba(255,255,255,0.18);
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+    -fx-background-radius: 12px;
+    -fx-padding: 10px 16px;
+    -fx-cursor: hand;
+}
+
+.btn-ghost:hover {
+    -fx-background-color: rgba(255,255,255,0.26);
+}
+
+.btn-primary {
+    -fx-background-color: #e67e22;
+    -fx-text-fill: white;
+    -fx-font-weight: 900;
+    -fx-background-radius: 12px;
+    -fx-padding: 10px 14px;
+    -fx-cursor: hand;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #ffcc70;
 }
